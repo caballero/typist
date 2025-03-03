@@ -29,7 +29,7 @@ def get_markers(file, delim):
             gen = row[0]
             markers[gen] = {}
             for col in range(1, len(row)):
-                markers[gen][colnames[col]] = row[col]
+                markers[gen][colnames[col]] = float(row[col])
     colnames.pop(0)
 
     logging.debug("Found markers: %s", str(len(markers)))
@@ -55,7 +55,7 @@ def cpm_normalization(expressions):
             cpm[sample][gene] = expressions[sample][gene] / total * 1000000
     return cpm
 
-def get_expressions(file, delim, min_expr, no_norm, average_filter):
+def get_expressions(file, delim, min_expr, cpm_norm, average_filter):
     """
     Reads an expression file and returns a dictionary of expressions and a list of sample names.
     
@@ -93,7 +93,7 @@ def get_expressions(file, delim, min_expr, no_norm, average_filter):
     logging.debug("Found samples: %s", colnames)
     logging.debug("Found genes per sample: %s", str(len(expressions[colnames[0]])))
 
-    if not no_norm:
+    if cpm_norm:
         expressions = cpm_normalization(expressions)
     
     if average_filter:
@@ -140,10 +140,10 @@ def get_predictions(expressions, samples, markers, categ):
             predicts[sample][category] = 0
         for gene in expressions[sample]:
             if gene in markers:
-                total_markers += 1
+                total_markers += markers[gene][category]
                 for category in categ:
-                    if int(markers[gene][category]) == int(expressions[sample][gene]):
-                        predicts[sample][category] += 1
+                    if expressions[sample][gene] >= markers[gene][category]:
+                        predicts[sample][category] += markers[gene][category]
         
         for category in categ:
             if total_markers > 0:
@@ -161,7 +161,7 @@ def main():
     parser.add_argument("-d", "--delimiter", default="\t", help="field delimiter")
     parser.add_argument("-m", "--min_expression", type=float, default=0.0, help="filter by minimum expression value")
     parser.add_argument("-a", "--average_filter", action="store_true", help="use average expression filter")
-    parser.add_argument("-n", "--no_normalization", action="store_true", help="disable normalization (CPM by default)")
+    parser.add_argument("-n", "--cpm_normalization", action="store_true", help="use normalization (CPM by default)")
     parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
     args = parser.parse_args()
 
@@ -170,7 +170,7 @@ def main():
     output_file = args.output_file
     delimiter = args.delimiter
     min_expression = args.min_expression
-    no_normalization = args.no_normalization
+    cpm_normalization = args.cpm_normalization
     average_filter = args.average_filter
     verbose = args.verbose
 
@@ -181,7 +181,7 @@ def main():
 
     markers, categ = get_markers(genemarkers_file, delimiter)
 
-    expressions, samples = get_expressions(input_file, delimiter, min_expression, no_normalization, average_filter)
+    expressions, samples = get_expressions(input_file, delimiter, min_expression, cpm_normalization, average_filter)
 
     predictions = get_predictions(expressions, samples, markers, categ)
 
