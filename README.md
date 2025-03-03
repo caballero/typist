@@ -58,6 +58,24 @@ Example:
 ## Output
 A simple table with the scores for each sample in each  cell-type category.
 
+Example:
+
+    > python src/typist.py -i data/test_expr.tsv -g data/test_markers.tsv -o test_out.tsv -m 20 -v
+    2025-03-03 12:23:15,001 DEBUG Reading markers file data/test_markers.tsv
+    2025-03-03 12:23:15,002 DEBUG Found markers: 5
+    2025-03-03 12:23:15,002 DEBUG Found categories: ['ClassA', 'ClassB', 'ClassC']
+    2025-03-03 12:23:15,002 DEBUG Reading expressions file data/test_expr.tsv
+    2025-03-03 12:23:15,002 DEBUG Found samples: ['Sample1', 'Sample2', 'Sample3']
+    2025-03-03 12:23:15,002 DEBUG Found genes per sample: 5
+    2025-03-03 12:23:15,002 DEBUG Filtering by minimum expression
+    2025-03-03 12:23:15,002 DEBUG Making predictions
+    2025-03-03 12:23:15,002 DEBUG Writing predictions to file test_out.tsv
+    > more test_out.tsv
+    Sample  ClassA  ClassB  ClassC
+    Sample1 1.0000  0.0000  0.0000
+    Sample2 0.0000  1.0000  0.0000
+    Sample3 0.0000  0.0000  1.0000
+
 ## How is the scores computed?
 After normalization and filtering, gene markers are searched in samples, if the gene is expressed (based on minimal expression), the score adds the value from the markers table. 
 Final score value is generated dividing the total score over the total expected score.
