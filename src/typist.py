@@ -18,24 +18,30 @@ def get_markers(file, delim):
     
     Returns:
         tuple: A tuple where the first element is a dictionary of markers and their
-        associated values, and the second element is a list of categories names.
+        associated values, the maximal scores per category and the second element is a list of
+        categories names.
     """
     markers = {}
+    max_score = {}
     logging.debug("Reading markers file %s", file)
     with open(file, 'r') as f:
         reader = csv.reader(f, delimiter=delim)
         colnames = [colname.strip() for colname in next(reader)]
+        for col in colnames:
+            max_score[col] = 0
+
         for row in reader:
             gen = row[0]
             markers[gen] = {}
             for col in range(1, len(row)):
                 markers[gen][colnames[col]] = float(row[col])
+                max_score[colnames[col]] += float(row[col])
     colnames.pop(0)
 
     logging.debug("Found markers: %s", str(len(markers)))
     logging.debug("Found categories: %s", colnames)
     
-    return markers, colnames
+    return markers, max_score, colnames
 
 def cpm_normalization(expressions):
     """
@@ -118,7 +124,7 @@ def get_expressions(file, delim, min_expr, cpm_norm, average_filter):
         return expressions, colnames
 
 
-def get_predictions(expressions, samples, markers, categ):
+def get_predictions(expressions, samples, markers, max_scores, categ):
     """
     Makes predictions based on expression data.
 
@@ -140,14 +146,14 @@ def get_predictions(expressions, samples, markers, categ):
             predicts[sample][category] = 0
         for gene in expressions[sample]:
             if gene in markers:
-                total_markers += markers[gene][category]
+                total_markers += 1
                 for category in categ:
                     if expressions[sample][gene] >= markers[gene][category]:
                         predicts[sample][category] += markers[gene][category]
         
         for category in categ:
             if total_markers > 0:
-                predicts[sample][category] = predicts[sample][category] / total_markers
+                predicts[sample][category] = predicts[sample][category] / max_scores[category]
             else:
                 logging.error("No markers found for sample %s", sample)
     return predicts
@@ -179,11 +185,11 @@ def main():
     else:
         logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
-    markers, categ = get_markers(genemarkers_file, delimiter)
+    markers, max_scores, categ = get_markers(genemarkers_file, delimiter)
 
     expressions, samples = get_expressions(input_file, delimiter, min_expression, cpm_normalization, average_filter)
 
-    predictions = get_predictions(expressions, samples, markers, categ)
+    predictions = get_predictions(expressions, samples, markers, max_scores, categ)
 
     logging.debug("Writing predictions to file %s", output_file)
     with open(output_file, 'w') as out:
