@@ -198,7 +198,7 @@ def main():
         for sample in predictions:
             row = [sample]
             for category in categ:
-                row.append(predictions[sample][category])
+                row.append("%.4f" % predictions[sample][category])
             writer.writerow(row)
         
     
